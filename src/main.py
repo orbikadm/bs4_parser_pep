@@ -124,8 +124,7 @@ def pep(session):
     for tr_tag in tqdm(tr_tags[1:], desc='Пошла жара'):
         abbr_tag = find_tag(tr_tag, 'abbr')
         preview_status = abbr_tag.text[1:]
-        # href_attr = find_tag(tr_tag, 'a', {'string': re.compile(r'\d{1,4}')})
-        href_attr = tr_tag.find('a', string=re.compile(r'\d{1,4}'))
+        href_attr = find_tag(tr_tag, 'a', {'href': re.compile(r'\d{1,4}')})
         pep_url = urljoin(PEP_DOC_URL, href_attr['href'])
         pep_status = get_pep_info(session, pep_url)
         if pep_status not in EXPECTED_STATUS[preview_status]:
