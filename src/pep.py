@@ -8,7 +8,7 @@ import logging
 
 
 PEP_DOC_URL = 'https://peps.python.org/'
-EXPECTED_STATUS = {
+EXPECTED_PEP_STATUS = {
     'A': ('Active', 'Accepted'),
     'D': ('Deferred',),
     'F': ('Final',),
@@ -43,12 +43,12 @@ def pep():
         href_attr = tr_tag.find('a', string=re.compile(r'\d{1,4}'))
         pep_url = urljoin(PEP_DOC_URL, href_attr['href'])
         pep_status = get_pep_info(pep_url)
-        if pep_status not in EXPECTED_STATUS[preview_status]:
+        if pep_status not in EXPECTED_PEP_STATUS[preview_status]:
             logging.info(f"""
 Несовпадающие статусы:
 {pep_url} 
 Статус в карточке: {pep_status} 
-Ожидаемые статусы: {EXPECTED_STATUS[preview_status]}
+Ожидаемые статусы: {EXPECTED_PEP_STATUS[preview_status]}
 """)
 
         count_statuses[pep_status] += 1

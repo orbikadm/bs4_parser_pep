@@ -1,3 +1,4 @@
+from collections import Counter
 import logging
 import re
 from urllib.parse import urljoin
@@ -7,7 +8,7 @@ import requests_cache
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import BASE_DIR, MAIN_DOC_URL
+from constants import BASE_DIR, MAIN_DOC_URL, PEP_DOC_URL, EXPECTED_STATUS
 from outputs import control_output
 from utils import get_response, find_tag
 
@@ -24,7 +25,7 @@ def whats_new(session):
         'li', attrs={'class': 'toctree-l1'}
     )
 
-    results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
+    results = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
     for section in tqdm(sections_by_python, desc='ссылки'):
         version_a_tag = find_tag(section, 'a')
         href = version_a_tag['href']
@@ -99,8 +100,45 @@ def download(session):
     logging.info(f'Архив был загружен и сохранён: {archive_path}')
 
 
+def get_pep_info(session, url):
+    response = get_response(session, url)
+    soup = BeautifulSoup(response.text, features='lxml')
+    return find_tag(soup, 'abbr').text
+
+
+def get_dismatch_message(pep_url, pep_status, preview_status):
+    return f"""
+Несовпадающие статусы:
+{pep_url} 
+Статус в карточке: {pep_status} 
+Ожидаемые статусы: {EXPECTED_STATUS[preview_status]}
+"""
+
+
 def pep(session):
-    pass
+    count_statuses = Counter()
+    response = get_response(session, PEP_DOC_URL)
+    soup = BeautifulSoup(response.text, features='lxml')
+    section_tag = find_tag(soup, 'section', {'id': 'numerical-index'})
+    tr_tags = section_tag.find_all('tr')
+    for tr_tag in tqdm(tr_tags[1:], desc='Пошла жара'):
+        abbr_tag = find_tag(tr_tag, 'abbr')
+        preview_status = abbr_tag.text[1:]
+        # href_attr = find_tag(tr_tag, 'a', {'string': re.compile(r'\d{1,4}')})
+        href_attr = tr_tag.find('a', string=re.compile(r'\d{1,4}'))
+        pep_url = urljoin(PEP_DOC_URL, href_attr['href'])
+        pep_status = get_pep_info(session, pep_url)
+        if pep_status not in EXPECTED_STATUS[preview_status]:
+            logging.info(
+                get_dismatch_message(pep_url, pep_status, preview_status)
+            )
+        count_statuses[pep_status] += 1
+
+    results = [('Статус', 'Количество')]
+    results.extend(count_statuses.items())
+    all_pep = sum(count_statuses.values())
+    results.append(('Total', all_pep))
+    return results
 
 
 MODE_TO_FUNCTION = {
