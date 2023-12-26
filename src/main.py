@@ -102,6 +102,8 @@ def download(session):
 
 def get_pep_info(session, url):
     response = get_response(session, url)
+    if response is None:
+        return
     soup = BeautifulSoup(response.text, features='lxml')
     return find_tag(soup, 'abbr').text
 
@@ -118,10 +120,12 @@ def get_dismatch_message(pep_url, pep_status, preview_status):
 def pep(session):
     count_statuses = Counter()
     response = get_response(session, PEP_DOC_URL)
+    if response is None:
+        return
     soup = BeautifulSoup(response.text, features='lxml')
     section_tag = find_tag(soup, 'section', {'id': 'numerical-index'})
     tr_tags = section_tag.find_all('tr')
-    for tr_tag in tqdm(tr_tags[1:], desc='Пошла жара'):
+    for tr_tag in tqdm(tr_tags[1:], desc='Парсим статусы'):
         abbr_tag = find_tag(tr_tag, 'abbr')
         preview_status = abbr_tag.text[1:]
         href_attr = find_tag(tr_tag, 'a', {'href': re.compile(r'\d{1,4}')})
