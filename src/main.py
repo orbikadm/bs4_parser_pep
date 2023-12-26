@@ -109,12 +109,12 @@ def get_pep_info(session, url):
 
 
 def get_dismatch_message(pep_url, pep_status, preview_status):
-    return f"""
-Несовпадающие статусы:
-{pep_url}
-Статус в карточке: {pep_status}
-Ожидаемые статусы: {EXPECTED_STATUS[preview_status]}
-"""
+    return (
+        "Несовпадающие статусы:"
+        f"{pep_url}"
+        f"Статус в карточке: {pep_status}"
+        f"Ожидаемые статусы: {EXPECTED_STATUS[preview_status]}"
+    )
 
 
 def pep(session):
