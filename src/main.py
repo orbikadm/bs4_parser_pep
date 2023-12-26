@@ -10,10 +10,12 @@ from tqdm import tqdm
 from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, MAIN_DOC_URL, PEP_DOC_URL, EXPECTED_STATUS
 from outputs import control_output
-from utils import get_response, find_tag
+from utils import get_response, get_pep_info, find_tag
 
 
 def whats_new(session):
+    """Функция парсинга изменений в Python. Возвращает список кортежей."""
+
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     response = get_response(session, whats_new_url)
     if response is None:
@@ -43,6 +45,10 @@ def whats_new(session):
 
 
 def latest_versions(session):
+    """
+    Функция парсинга версий в Python. Возвращает список кортежей ссылки на
+    документацию, версии и статуса версии.
+    """
     response = get_response(session, MAIN_DOC_URL)
     if response is None:
         return
@@ -73,8 +79,9 @@ def latest_versions(session):
 
 
 def download(session):
+    """Функция скачивает zip архив с документацией Python."""
+
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
-    session = requests_cache.CachedSession()
     response = get_response(session, downloads_url)
     if response is None:
         return
@@ -100,24 +107,25 @@ def download(session):
     logging.info(f'Архив был загружен и сохранён: {archive_path}')
 
 
-def get_pep_info(session, url):
-    response = get_response(session, url)
-    if response is None:
-        return
-    soup = BeautifulSoup(response.text, features='lxml')
-    return find_tag(soup, 'abbr').text
-
-
-def get_dismatch_message(pep_url, pep_status, preview_status):
+def get_dismatch_message(pep_url, pep_status, exp_status):
+    """
+    Функция формирует сообщение при несовпадении статуса PEP в общей таблице
+    со статусом на странице PEP.
+    """
     return (
-        "Несовпадающие статусы:"
+        f"Несовпадающие статусы:"
         f"{pep_url}"
         f"Статус в карточке: {pep_status}"
-        f"Ожидаемые статусы: {EXPECTED_STATUS[preview_status]}"
+        f"Ожидаемые статусы: {exp_status}"
     )
 
 
 def pep(session):
+    """
+    Функция парсит все статусы PEP, считает количество спецификаций PEP в
+    каждом статусе, а также общее количесто спецификаций и возвращает данные
+    в списке кортежей вида ('Статус', 'Количество').
+    """
     count_statuses = Counter()
     response = get_response(session, PEP_DOC_URL)
     if response is None:
@@ -128,12 +136,15 @@ def pep(session):
     for tr_tag in tqdm(tr_tags[1:], desc='Парсим статусы'):
         abbr_tag = find_tag(tr_tag, 'abbr')
         preview_status = abbr_tag.text[1:]
+        exp_status = EXPECTED_STATUS.get(preview_status)
+        if exp_status is None:
+            continue
         href_attr = find_tag(tr_tag, 'a', {'href': re.compile(r'\d{1,4}')})
         pep_url = urljoin(PEP_DOC_URL, href_attr['href'])
         pep_status = get_pep_info(session, pep_url)
-        if pep_status not in EXPECTED_STATUS[preview_status]:
+        if pep_status not in exp_status:
             logging.info(
-                get_dismatch_message(pep_url, pep_status, preview_status)
+                get_dismatch_message(pep_url, pep_status, exp_status)
             )
         count_statuses[pep_status] += 1
 
@@ -153,6 +164,8 @@ MODE_TO_FUNCTION = {
 
 
 def main():
+    """Основная логика работы парсера."""
+
     configure_logging()
     logging.info('Парсер запущен!')
 

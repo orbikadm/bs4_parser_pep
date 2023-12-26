@@ -14,3 +14,4 @@ EXPECTED_STATUS = {
     'W': ('Withdrawn',),
     '': ('Draft', 'Active'),
 }
+TAG_STATUS_ON_PEP_PAGE = 'abbr'

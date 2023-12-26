@@ -7,6 +7,12 @@ from constants import BASE_DIR, DATETIME_FORMAT
 
 
 def file_output(results, cli_args):
+    """
+    Функция сохраняет результаты, переданные в нее аргументом results, в файл
+    формата .csv.
+    Предварительно функция проверяет наличие директории 'results' и при
+    необходимости создает её.
+    """
     results_dir = BASE_DIR / 'results'
     results_dir.mkdir(exist_ok=True)
     parser_mode = cli_args.mode
@@ -21,6 +27,10 @@ def file_output(results, cli_args):
 
 
 def control_output(results, cli_args):
+    """
+    Функция обрабатывает аргумент командной строки cli_args и осуществляет
+    перенаправление результата results между функциями вывода.
+    """
     output = cli_args.output
     if output == 'pretty':
         pretty_output(results)
@@ -31,11 +41,17 @@ def control_output(results, cli_args):
 
 
 def default_output(results):
+    """
+    Функция вывода результата results по умолчанию.
+    Выводит результаты построчно в терминал.
+    """
     for row in results:
         print(*row)
 
 
 def pretty_output(results):
+    """Функция вывода результата results в виде таблицы в терминал."""
+
     table = PrettyTable()
     table.field_names = results[0]
     table.align = 'l'
